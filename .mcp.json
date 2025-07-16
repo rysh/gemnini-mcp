@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "gemini-image-analyzer": {
+      "command": "npx",
+      "args": ["tsx", "src/mcp-server.ts"],
+      "env": {
+        "GEMINI_MODEL": "gemini-2.5-pro",
+        "GEMINI_TEMPERATURE": "0.7",
+        "GEMINI_MAX_TOKENS": "2048",
+        "GEMINI_LANGUAGE": "ja",
+        "MAX_IMAGE_SIZE": "10",
+        "ANALYSIS_TIMEOUT": "30",
+        "MAX_CONCURRENT_REQUESTS": "3",
+        "DEFAULT_LANGUAGE": "ja"
+      }
+    }
+  }
+}

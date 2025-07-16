@@ -1,0 +1,153 @@
+# Mise 設定ファイル
+# https://mise.jdx.dev/configuration.html
+
+[tools]
+node = "20" # LTS推奨
+# 必要に応じて他のツールも追加可能
+# python = "3.11"
+# go = "1.21"
+
+[env]
+# 開発環境用の環境変数
+NODE_ENV = "development"
+DEBUG = "gemini-mcp:*"
+LOG_LEVEL = "debug"
+# テスト用設定
+GEMINI_MODEL = "gemini-2.5-pro"
+GEMINI_TEMPERATURE = "0.7"
+GEMINI_MAX_TOKENS = "2048"
+GEMINI_LANGUAGE = "ja"
+MAX_IMAGE_SIZE = "10"
+ANALYSIS_TIMEOUT = "30"
+MAX_CONCURRENT_REQUESTS = "3"
+
+# タスク定義
+[tasks.install]
+description = "依存関係をインストール"
+run = "npm ci"
+
+[tasks.dev]
+description = "開発モードでサーバー起動"
+run = "tsx watch src/mcp-server.ts"
+depends = ["install"]
+
+[tasks.build]
+description = "TypeScriptをビルド"
+run = "tsc"
+depends = ["install"]
+
+[tasks.test]
+description = "テストを実行"
+run = "jest"
+depends = ["install"]
+
+[tasks."test:watch"]
+description = "ウォッチモードでテスト実行"
+run = "jest --watch"
+depends = ["install"]
+
+[tasks."test:coverage"]
+description = "カバレッジ付きテスト実行"
+run = "jest --coverage"
+depends = ["install"]
+
+[tasks.typecheck]
+description = "TypeScript型チェック"
+run = "tsc --noEmit"
+depends = ["install"]
+
+[tasks.lint]
+description = "ESLintでコード検証"
+run = "eslint src/**/*.ts tests/**/*.ts"
+depends = ["install"]
+
+[tasks."lint:fix"]
+description = "ESLintで自動修正"
+run = "eslint src/**/*.ts tests/**/*.ts --fix"
+depends = ["install"]
+
+[tasks.clean]
+description = "ビルド成果物を削除"
+run = "rm -rf dist coverage .jest"
+
+[tasks.start]
+description = "ビルド済みサーバーを起動"
+run = "node dist/mcp-server.js"
+depends = ["build"]
+
+# 統合タスク
+[tasks.check]
+description = "全品質チェックを実行（型チェック + リント + テスト）"
+run = [
+    "mise run typecheck",
+    "mise run lint", 
+    "mise run test:coverage"
+]
+depends = ["install"]
+
+[tasks.ci]
+description = "CI環境での全チェック"
+run = [
+    "npm ci",
+    "mise run typecheck",
+    "mise run lint",
+    "mise run test:coverage",
+    "mise run build"
+]
+
+[tasks.setup]
+description = "初回セットアップ（依存関係 + Gemini CLI）"
+run = [
+    "npm ci",
+    "npx @google-ai/generative-ai-cli --help || echo 'Gemini CLI確認完了'"
+]
+
+# MCP関連タスク
+[tasks."mcp:register"]
+description = "Claude CodeにMCPサーバーを登録"
+run = "claude mcp add gemini-image-analyzer npx tsx src/mcp-server.ts"
+depends = ["install"]
+
+[tasks."mcp:unregister"]
+description = "Claude CodeからMCPサーバーを削除"
+run = "claude mcp remove gemini-image-analyzer"
+
+[tasks."mcp:list"]
+description = "登録済みMCPサーバー一覧"
+run = "claude mcp list"
+
+[tasks."mcp:test"]
+description = "MCPサーバー単体テスト"
+run = "tsx src/mcp-server.ts --test"
+depends = ["install"]
+
+# デバッグ・開発支援タスク
+[tasks."debug:verbose"]
+description = "詳細ログでサーバー起動"
+env = { DEBUG = "gemini-mcp:*", LOG_LEVEL = "debug" }
+run = "tsx src/mcp-server.ts"
+depends = ["install"]
+
+[tasks."gemini:auth"]
+description = "Gemini CLI認証設定"
+run = "npx @google-ai/generative-ai-cli --prompt 'テスト認証'"
+
+[tasks."gemini:test"]
+description = "Gemini CLI動作テスト"
+run = "npx @google-ai/generative-ai-cli --prompt 'Hello from mise!'"
+
+# リリース関連
+[tasks."pre-commit"]
+description = "コミット前チェック"
+run = [
+    "mise run lint:fix",
+    "mise run typecheck", 
+    "mise run test"
+]
+
+[tasks."pre-push"]
+description = "プッシュ前チェック"
+run = [
+    "mise run check",
+    "mise run build"
+]
